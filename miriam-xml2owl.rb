@@ -89,7 +89,7 @@ xml.xpath('//xmlns:datatype', ns).each do |datatype|
     databases.push [
       hash[:URIs].chomp('/'),
       hash[:Name],
-      hash[:Definition].gsub('"', '\\"'),
+      hash[:Definition].gsub('"', '\\"').strip,
       hash[:MIRIAM].sub(/^MIR:/, '')
     ]
   end
@@ -110,24 +110,33 @@ puts HEADER = '# Identifiers.org ontology
 @prefix mir:  <http://identifiers.org/miriam.collection/MIR:> .
 
 <http://rdf.identifiers.org/ontology>
-    rdf:type owl:Ontology ;
-    dct:license <http://creativecommons.org/publicdomain/zero/1.0/> ;
-    owl:versionInfo "Created on 2016-07-25"^^xsd:string .
+    rdf:type            owl:Ontology ;
+    rdfs:label          "Identifiers.org ontology" ;
+    rdfs:comment        "Ontology to describe a dataset and its item." ;
+    dct:license         <http://creativecommons.org/publicdomain/zero/1.0/> ;
+    owl:versionInfo     "Created on @DATE_GENERATED@"^^xsd:string .
 
 :DatabaseEntry
-    rdf:type owl:Class ;
-    owl:subClassOf  sio:SIO_000756 .    # sio:DatabaseEntry
+    rdf:type            owl:Class ;
+    rdfs:label          "Entry" ;
+    rdfs:comment        "An instance of a database entry described with an Identifiers.org URI." ;
+    owl:subClassOf      sio:SIO_000756 .        # sio:DatabaseEntry
 
 :Database
-    rdf:type owl:Class ;
-    owl:subClassOf  sio:SIO_000089 .    # sio:Dataset
+    rdf:type            owl:Class ;
+    rdfs:label          "Database" ;
+    rdfs:comment        "An instance of a database described with an Identifiers.org URI." ;
+    owl:subClassOf      sio:SIO_000089 .        # sio:Dataset
 
-:entryOf
-    rdfs:domain  :DatabaseEntry ;       # sio:DatabaseEntry
-    rdfs:range   :Database ;            # sio:Database
-    owl:subPropertyOf sio:SIO_000068 .  # sio:is-part-of (or sio:SIO_001278 is-data-item-in)
+:database
+    rdf:type            owl:ObjectProperty ;
+    rdfs:label          "is entry of" ;
+    rdfs:comment        "This predicate is used to describe an DatabaseEntry belongs to a Database" ;
+    rdfs:domain        :DatabaseEntry ;
+    rdfs:range         :Database ;
+    owl:subPropertyOf  sio:SIO_000068 .	        # sio:is-part-of (or sio:SIO_001278 is-data-item-in)
 
-'
+'.sub('@DATE_GENERATED@', Time.now.strftime('%Y-%m-%d'))
 
 databases.sort.uniq.each do |uri, label, comment, miriam|
   entry = template.clone
