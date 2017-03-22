@@ -3,20 +3,19 @@
 # Convert MIRIAM Registry XML file (http://www.ebi.ac.uk/miriam/main/export/)
 # to OWL for the Identifiers.org service.
 #
-# Copyright (C) 2016 Toshiaki Katayama <ktym@dbcls.jp>
+# Copyright (C) 2016, 2017 Toshiaki Katayama <ktym@dbcls.jp>
 #
 # Pre requirements:
 #  % curl http://www.ebi.ac.uk/miriam/main/export/xml/ > resources_all.xml
 #  % gem install nokogiri
-#  % miriam-xml2owl.rb resources_all.xml > resources_all.owl
+#  % ruby miriam-xml2owl.rb resources_all.xml > resources_all.owl
 #
 
 require 'rubygems'
 require 'nokogiri'
 require 'csv'
 
-template = DATA.read
-databases = []
+databases = {}
 
 xml = Nokogiri::XML(ARGF)
 
@@ -61,7 +60,7 @@ xml.xpath('//xmlns:datatype', ns).each do |datatype|
     urls = datatype.xpath(path, ns).collect(&:text)
 
     hash = {
-      :MIRIAM       =>  datatype["id"],
+      :Collection   =>  datatype["id"],
       :Namespace    =>  datatype.at('namespace').content,
       :Pattern      =>  datatype["pattern"],
       :Name         =>  datatype.at('name').content,
@@ -84,35 +83,44 @@ xml.xpath('//xmlns:datatype', ns).each do |datatype|
       :Location     =>  res_location,
     }
 
-    $stderr.puts "Warning: #{hash[:URIs]} contains quote in #{hash[:Definition]}" if hash[:Definition][/\"/]
+    $stderr.puts "Warning: #{hash[:URIs]} contains quote in #{hash[:Definition]}" if hash[:Definition][/\"/] if $DEBUG
 
-    databases.push [
-      hash[:URIs].chomp('/'),
-      hash[:Name],
-      hash[:Definition].gsub('"', '\\"').strip,
-      hash[:MIRIAM].sub(/^MIR:/, '')
-    ]
+    namespace = hash[:Namespace]
+    res_key = hash[:URL].strip
+    res_val = hash[:Resource].sub(/^MIR:/, '')
+
+    unless databases[namespace]
+      databases[namespace] = {
+        :uri => hash[:URIs].chomp('/'),
+        :label => hash[:Name],
+        :comment => hash[:Definition].gsub("\n", " ").gsub('"', '\\"').strip,
+        :mirc => hash[:Collection].sub(/^MIR:/, ''),
+        :resources => { res_key => res_val }
+      }
+    else
+      databases[namespace][:resources][res_key] = res_val
+    end
   end
 end
 
 # @prefix dcat: <http://www.w3.org/ns/dcat#> .
-# @prefix mirc: <http://identifiers.org/miriam.collection/MIR:> .
-# @prefix mirr: <http://identifiers.org/miriam.resource/MIR:> .
 
 puts HEADER = '# Identifiers.org ontology
-@prefix :     <http://rdf.identifiers.org/ontology> .
+@prefix :     <http://rdf.identifiers.org/ontology/> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 @prefix dct:  <http://purl.org/dc/terms/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix sio:  <http://semanticscience.org/resource/> .
-@prefix mir:  <http://identifiers.org/miriam.collection/MIR:> .
+@prefix mirc: <http://identifiers.org/miriam.collection/MIR:> .
+@prefix mirr: <http://identifiers.org/miriam.resource/MIR:> .
 
-<http://rdf.identifiers.org/ontology>
+<http://rdf.identifiers.org/ontology/>
     rdf:type            owl:Ontology ;
     rdfs:label          "Identifiers.org ontology" ;
-    rdfs:comment        "Ontology to describe a dataset and its item." ;
+    rdfs:comment        "Ontology for describing databases and entries in the Identifiers.org repository." ;
     dct:license         <http://creativecommons.org/publicdomain/zero/1.0/> ;
     owl:versionInfo     "Created on @DATE_GENERATED@"^^xsd:string .
 
@@ -131,27 +139,42 @@ puts HEADER = '# Identifiers.org ontology
 :database
     rdf:type            owl:ObjectProperty ;
     rdfs:label          "is entry of" ;
-    rdfs:comment        "This predicate is used to describe an DatabaseEntry belongs to a Database" ;
+    rdfs:comment        "A predicate for describing that a DatabaseEntry belongs to a Database." ;
     rdfs:domain        :DatabaseEntry ;
     rdfs:range         :Database ;
-    owl:subPropertyOf  sio:SIO_000068 .	        # sio:is-part-of (or sio:SIO_001278 is-data-item-in)
+    owl:subPropertyOf  sio:SIO_000068 .         # sio:is-part-of (or sio:SIO_001278 is-data-item-in)
 
 '.sub('@DATE_GENERATED@', Time.now.strftime('%Y-%m-%d'))
 
-databases.sort.uniq.each do |uri, label, comment, miriam|
-  entry = template.clone
-  entry.sub!('@uri', uri)
-  entry.sub!('@label', label)
-  entry.sub!('@comment', comment)
-  entry.sub!('@miriam', miriam)
-  puts entry
-end
-
-__END__
-
+DATABASE = '
 <@uri>
     rdf:type :Database ;
     rdfs:label "@label" ;
     rdfs:comment "@comment" ;
-    dct:source mir:@miriam .
+    dct:source mirc:@miriam.collection ;
+    foaf:homepage @resources .
+'
 
+#    dct:references @resources .
+
+RESOURCE = '
+<@url>
+    dct:publisher mirr:@miriam.resource .
+'
+
+databases.sort.each do |namespace, hash|
+  database = DATABASE.clone
+  database.sub!('@uri', hash[:uri])
+  database.sub!('@label', hash[:label])
+  database.sub!('@comment', hash[:comment])
+  database.sub!('@miriam.collection', hash[:mirc])
+  database.sub!('@resources', hash[:resources].keys.map{|x| "<#{x}>"}.join(', '))
+  puts database
+
+  hash[:resources].each do |url, mirr|
+    resource = RESOURCE.clone
+    resource.sub!('@url', url)
+    resource.sub!('@miriam.resource', mirr)
+    puts resource
+  end
+end
