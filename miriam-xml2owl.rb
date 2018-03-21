@@ -6,7 +6,7 @@
 # Copyright (C) 2016, 2017 Toshiaki Katayama <ktym@dbcls.jp>
 #
 # Pre requirements:
-#  % curl http://www.ebi.ac.uk/miriam/main/export/xml/ > resources_all.xml
+#  % wget http://www.ebi.ac.uk/miriam/main/export/xml/index.html -O resources_all.xml
 #  % gem install nokogiri
 #  % ruby miriam-xml2owl.rb resources_all.xml > resources_all.owl
 #
@@ -113,6 +113,7 @@ puts HEADER = '# Identifiers.org ontology
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 @prefix dct:  <http://purl.org/dc/terms/> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix sio:  <http://semanticscience.org/resource/> .
 @prefix mirc: <http://identifiers.org/miriam.collection/MIR:> .
 @prefix mirr: <http://identifiers.org/miriam.resource/MIR:> .
@@ -124,31 +125,31 @@ puts HEADER = '# Identifiers.org ontology
     dct:license         <http://creativecommons.org/publicdomain/zero/1.0/> ;
     owl:versionInfo     "Created on @DATE_GENERATED@"^^xsd:string .
 
-:DatabaseEntry
+:DataResource
     rdf:type            owl:Class ;
-    rdfs:label          "Entry" ;
+    rdfs:label          "DataResource" ;
     rdfs:comment        "An instance of a database entry described with an Identifiers.org URI." ;
-    owl:subClassOf      sio:SIO_000756 .        # sio:DatabaseEntry
+    skos:broader        sio:SIO_000756 .        # sio:DatabaseEntry
 
-:Database
+:DataCollection
     rdf:type            owl:Class ;
-    rdfs:label          "Database" ;
+    rdfs:label          "DataCollection" ;
     rdfs:comment        "An instance of a database described with an Identifiers.org URI." ;
-    owl:subClassOf      sio:SIO_000089 .        # sio:Dataset
+    skos:broader        sio:SIO_000089 .        # sio:Dataset
 
 :database
     rdf:type            owl:ObjectProperty ;
     rdfs:label          "is entry of" ;
-    rdfs:comment        "A predicate for describing that a DatabaseEntry belongs to a Database." ;
-    rdfs:domain        :DatabaseEntry ;
-    rdfs:range         :Database ;
+    rdfs:comment        "A predicate for describing that a DataResource belongs to a DataCollection." ;
+    rdfs:domain        :DataCollection ;
+    rdfs:range         :DataResource ;
     owl:subPropertyOf  sio:SIO_000068 .         # sio:is-part-of (or sio:SIO_001278 is-data-item-in)
 
 '.sub('@DATE_GENERATED@', Time.now.strftime('%Y-%m-%d'))
 
 DATABASE = '
 <@uri>
-    rdf:type :Database ;
+    rdf:type :DataCollection ;
     rdfs:label "@label" ;
     rdfs:comment "@comment" ;
     dct:source mirc:@miriam.collection ;
