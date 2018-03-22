@@ -129,13 +129,13 @@ puts HEADER = '# Identifiers.org ontology
     rdf:type            owl:Class ;
     rdfs:label          "DataResource" ;
     rdfs:comment        "An instance of a database entry described with an Identifiers.org URI." ;
-    skos:broader        sio:SIO_000756 .        # sio:DatabaseEntry
+    skos:narrower       sio:SIO_000756 .        # sio:DatabaseEntry
 
 :DataCollection
     rdf:type            owl:Class ;
     rdfs:label          "DataCollection" ;
     rdfs:comment        "An instance of a database described with an Identifiers.org URI." ;
-    skos:broader        sio:SIO_000089 .        # sio:Dataset
+    skos:narrower       sio:SIO_000089 .        # sio:Dataset
 
 :database
     rdf:type            owl:ObjectProperty ;

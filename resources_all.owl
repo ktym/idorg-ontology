@@ -16,19 +16,19 @@
     rdfs:label          "Identifiers.org ontology" ;
     rdfs:comment        "Ontology for describing databases and entries in the Identifiers.org repository." ;
     dct:license         <http://creativecommons.org/publicdomain/zero/1.0/> ;
-    owl:versionInfo     "Created on 2018-03-21"^^xsd:string .
+    owl:versionInfo     "Created on 2018-03-22"^^xsd:string .
 
 :DataResource
     rdf:type            owl:Class ;
     rdfs:label          "DataResource" ;
     rdfs:comment        "An instance of a database entry described with an Identifiers.org URI." ;
-    skos:broader        sio:SIO_000756 .        # sio:DatabaseEntry
+    skos:narrower       sio:SIO_000756 .        # sio:DatabaseEntry
 
 :DataCollection
     rdf:type            owl:Class ;
     rdfs:label          "DataCollection" ;
     rdfs:comment        "An instance of a database described with an Identifiers.org URI." ;
-    skos:broader        sio:SIO_000089 .        # sio:Dataset
+    skos:narrower       sio:SIO_000089 .        # sio:Dataset
 
 :database
     rdf:type            owl:ObjectProperty ;
